@@ -1,12 +1,17 @@
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <sys/time.h>
 
-#define TIMEOUT_S 0.5
+// #define LOG_DEBUG
+#define TIMEOUT_S    0.5
+#define MAX_DELAY_MS 0.2
+
 typedef struct Packet {
-		uint32_t seq_num;
-		uint32_t distance;
-		uint32_t crc;
+		uint32_t       seq_num;
+		uint32_t       distance;
+		uint32_t       crc;
+		struct timeval timestamp;
 } Packet;
 
 int32_t crc(uint32_t seq_num, uint32_t distance) {

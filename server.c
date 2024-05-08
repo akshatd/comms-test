@@ -85,6 +85,8 @@ int main() {
 	struct sockaddr_in sender_addr_actual; // sender address
 	uint32_t           seq_num  = 0;
 	int64_t            seq_diff = 0;
+	struct timeval     curr_time;
+	double             delay;
 	while (running) {
 		// receive data from the sender
 		packet_len = recvfrom(sockfd_sender, &packet, sizeof(packet), 0, (struct sockaddr *)&sender_addr_actual, &addrlen);
@@ -92,14 +94,22 @@ int main() {
 			perror("Failed to receive packet, ignoring ...");
 			continue;
 		} else {
+#ifdef LOG_DEBUG
 			printf("Received packet: %u %u %u (%ld bytes)\n", packet.seq_num, packet.distance, packet.crc, packet_len);
 			printf(
 				"Received packet from %s:%hu\n", inet_ntoa(sender_addr_actual.sin_addr), ntohs(sender_addr_actual.sin_port));
+#endif
 			if (!isPacketValid(packet)) {
 				printf("Packet is invalid\n");
 				continue;
 			}
 		}
+
+		// calculate the time taken to send the packet
+		gettimeofday(&curr_time, NULL);
+		delay =
+			(curr_time.tv_sec - packet.timestamp.tv_sec) * 1000 + (curr_time.tv_usec - packet.timestamp.tv_usec) / 1000.0;
+		if (delay > MAX_DELAY_MS) printf("High Delay: sender -> server: %f\n", delay);
 
 		// check if sequence has been skipped
 		seq_diff = packet.seq_num - seq_num;
@@ -113,8 +123,10 @@ int main() {
 		if (packet_len < 0) {
 			perror("Failed to send packet to receiver, ignoring ...");
 		} else {
+#ifdef LOG_DEBUG
 			printf("Sent packet: %u %u %u (%ld bytes)\n", packet.seq_num, packet.distance, packet.crc, packet_len);
 			printf("Sent packet to: %s:%hu\n", inet_ntoa(recver_addr.sin_addr), ntohs(recver_addr.sin_port));
+#endif
 		}
 	}
 

@@ -63,6 +63,8 @@ int main() {
 	struct sockaddr_in server_addr_actual;
 	uint32_t           seq_num  = 0;
 	int64_t            seq_diff = 0;
+	struct timeval     curr_time;
+	double             delay;
 	while (running) {
 		// receive data from server
 		received_packet_len = recvfrom(
@@ -71,15 +73,23 @@ int main() {
 			perror("Failed to receive packet, ignoring ...");
 			continue;
 		} else {
+#ifdef LOG_DEBUG
 			printf(
 				"Received packet: %u %u %u (%ld bytes)\n", received_packet.seq_num, received_packet.distance,
 				received_packet.crc, received_packet_len);
 			printf(
 				"Received packet from: %s:%hu\n", inet_ntoa(server_addr_actual.sin_addr), ntohs(server_addr_actual.sin_port));
+#endif
 			if (!isPacketValid(received_packet)) {
 				printf("Packet is invalid\n");
 			}
 		}
+
+		// calculate the time taken to receive the packet
+		gettimeofday(&curr_time, NULL);
+		delay = (curr_time.tv_sec - received_packet.timestamp.tv_sec) * 1000 +
+		        (curr_time.tv_usec - received_packet.timestamp.tv_usec) / 1000.0;
+		if (delay > MAX_DELAY_MS) printf("High Delay: sender -> receiver: %f\n", delay);
 
 		// check if sequence has been skipped
 		seq_diff = received_packet.seq_num - seq_num;

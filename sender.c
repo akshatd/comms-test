@@ -61,15 +61,18 @@ int main() {
 		sent_packet.seq_num  = seq_num++;
 		sent_packet.distance = 100;
 		sent_packet.crc      = crc(sent_packet.seq_num, sent_packet.distance);
+		gettimeofday(&sent_packet.timestamp, NULL);
 		sent_packet_len =
 			sendto(sockfd_sender, &sent_packet, sizeof(sent_packet), 0, (struct sockaddr *)&server_addr, addrlen);
 		if (sent_packet_len < 0) {
 			perror("Failed to send packet, ignoring ...");
 		} else {
+#ifdef LOG_DEBUG
 			printf(
 				"Sent packet: %u %u %u (%ld bytes)\n", sent_packet.seq_num, sent_packet.distance, sent_packet.crc,
 				sent_packet_len);
 			printf("Sent packet to: %s:%hu\n", inet_ntoa(server_addr.sin_addr), ntohs(server_addr.sin_port));
+#endif
 		}
 		usleep(SLEEP_S * 1000000);
 	}
