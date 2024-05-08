@@ -83,6 +83,8 @@ int main() {
 	ssize_t            packet_len;
 	socklen_t          addrlen = sizeof(sender_addr);
 	struct sockaddr_in sender_addr_actual; // sender address
+	uint32_t           seq_num  = 0;
+	int64_t            seq_diff = 0;
 	while (running) {
 		// receive data from the sender
 		packet_len = recvfrom(sockfd_sender, &packet, sizeof(packet), 0, (struct sockaddr *)&sender_addr_actual, &addrlen);
@@ -98,6 +100,13 @@ int main() {
 				continue;
 			}
 		}
+
+		// check if sequence has been skipped
+		seq_diff = packet.seq_num - seq_num;
+		if (seq_diff % UINT32_MAX != 1) {
+			printf("Sequence number skipped: %u -> %u\n", seq_num, packet.seq_num);
+		}
+		seq_num = packet.seq_num;
 
 		// send data to the receiver
 		packet_len = sendto(sockfd_receiver, &packet, sizeof(packet), 0, (struct sockaddr *)&recver_addr, addrlen);

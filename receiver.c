@@ -61,12 +61,15 @@ int main() {
 	ssize_t            received_packet_len;
 	socklen_t          addrlen = sizeof(server_addr);
 	struct sockaddr_in server_addr_actual;
+	uint32_t           seq_num  = 0;
+	int64_t            seq_diff = 0;
 	while (running) {
 		// receive data from server
 		received_packet_len = recvfrom(
 			sockfd_receiver, &received_packet, sizeof(received_packet), 0, (struct sockaddr *)&server_addr_actual, &addrlen);
 		if (received_packet_len < 0) {
 			perror("Failed to receive packet, ignoring ...");
+			continue;
 		} else {
 			printf(
 				"Received packet: %u %u %u (%ld bytes)\n", received_packet.seq_num, received_packet.distance,
@@ -77,6 +80,13 @@ int main() {
 				printf("Packet is invalid\n");
 			}
 		}
+
+		// check if sequence has been skipped
+		seq_diff = received_packet.seq_num - seq_num;
+		if (seq_diff % UINT32_MAX != 1) {
+			printf("Sequence number skipped: %u -> %u\n", seq_num, received_packet.seq_num);
+		}
+		seq_num = received_packet.seq_num;
 	}
 
 	printf("Receiver exiting\n");
