@@ -1,0 +1,83 @@
+---
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
+Language: Cpp
+BasedOnStyle: Google
+
+IndentWidth: 2
+TabWidth: 2
+ContinuationIndentWidth: 2
+UseTab: AlignWithSpaces
+
+ReferenceAlignment: Right # clang-format 14
+PointerAlignment: Right
+
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpacesInConditionalStatement: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesInAngles: Never # clang-format 14
+SpacesInCStyleCastParentheses: false
+SpacesBeforeTrailingComments: 1
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeCaseColon: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+SpacesInLineCommentPrefix: # clang-format 14
+  Minimum: 1
+  Maximum: 1
+
+AlignAfterOpenBracket: AlwaysBreak
+AlignArrayOfStructures: Right # clang-format 13
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveBitFields: AcrossEmptyLinesAndComments
+AlignConsecutiveDeclarations: Consecutive
+AlignConsecutiveMacros: Consecutive
+AlignEscapedNewlines: Left
+AlignTrailingComments: true
+
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse # this should work..??
+AllowShortEnumsOnASingleLine: true
+AlwaysBreakTemplateDeclarations: Yes
+BitFieldColonSpacing: After
+
+BreakBeforeBraces: Attach
+BreakBeforeTernaryOperators: false
+BreakConstructorInitializers: BeforeColon
+BreakStringLiterals: true
+
+ColumnLimit:     120
+
+Cpp11BracedListStyle: true
+EmptyLineBeforeAccessModifier: Always
+
+IndentAccessModifiers: true # clang-format 13
+IndentCaseBlocks: false
+IndentCaseLabels: true
+IndentExternBlock: Indent
+IndentPPDirectives: None
+
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+LambdaBodyIndentation: Signature # clang-format 13
+
+MaxEmptyLinesToKeep: 1
+
+PackConstructorInitializers: NextLine # clang-format 14
+AllowAllConstructorInitializersOnNextLine: true
+
+QualifierAlignment: Custom # clang-format 14
+QualifierOrder: ['static', 'const', 'inline', 'volatile', 'type']
+
+ReflowComments: true
+
+SortUsingDeclarations: true
+
+# IncludeBlocks: Preserve # clang-format 14
+SortIncludes: true # page says to use Never..??
+...
