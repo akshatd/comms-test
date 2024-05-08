@@ -23,10 +23,10 @@ bool isPacketValid(Packet packet) {
 #define CONFIG_FILE "config.txt"
 
 typedef struct Config {
-		char     ip_server[16];
-		uint16_t port_sender;
-		uint16_t port_receiver;
 		char     ip_sender[16];
+		uint16_t port_sender;
+		char     ip_server[16];
+		uint16_t port_receiver;
 		char     ip_receiver[16];
 } Config;
 
@@ -35,11 +35,11 @@ Config readConfig(char *filename) {
 	Config config;
 	FILE  *file = fopen(filename, "r");
 	fscanf(
-		file, "%s %hu %hu %s %s",
-		config.ip_server,      //
-		&config.port_sender,   //
-		&config.port_receiver, //
+		file, "%s %hu %s %hu %s",
 		config.ip_sender,      //
+		&config.port_sender,   //
+		config.ip_server,      //
+		&config.port_receiver, //
 		config.ip_receiver);
 	fclose(file);
 	return config;

@@ -14,7 +14,7 @@ void sigint_handler(int sig) {
 }
 
 int main() {
-	// Register signal handlers
+	// register signal handlers
 	signal(SIGINT, sigint_handler);
 	signal(SIGTERM, sigint_handler);
 	signal(SIGKILL, sigint_handler);
@@ -24,12 +24,12 @@ int main() {
 	Config config = readConfig(CONFIG_FILE);
 	printf("Server: %s\nPort: %hu\n", config.ip_server, config.port_sender);
 
-	// Create a timeout
+	// create timeout
 	struct timeval tv;
 	tv.tv_sec  = TIMEOUT_S;
 	tv.tv_usec = TIMEOUT_S * 1000000;
 
-	// Create UDP socket to send data
+	// create UDP socket to send data
 	int sockfd_sender = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sockfd_sender < 0) {
 		perror("Failed to create sender socket");
@@ -42,13 +42,15 @@ int main() {
 		printf("Sender socket created\n");
 	}
 
-	// Create the server address
+	// create server address
 	struct sockaddr_in server_addr;
 	server_addr.sin_family      = AF_INET;
 	server_addr.sin_addr.s_addr = inet_addr(config.ip_server);
 	server_addr.sin_port        = htons(config.port_sender);
 
-	// Send data to server
+	// no need to bind socket when sending data to server
+
+	// send data to server
 	Packet    sent_packet;
 	ssize_t   sent_packet_len;
 	socklen_t addrlen = sizeof(server_addr);
