@@ -6,6 +6,8 @@
 
 #include "common.h"
 
+#define SLEEP_S 0.5
+
 static volatile int running = 1;
 
 void sigint_handler(int sig) {
@@ -69,7 +71,7 @@ int main() {
 				sent_packet_len);
 			printf("Sent packet to: %s:%hu\n", inet_ntoa(server_addr.sin_addr), ntohs(server_addr.sin_port));
 		}
-		sleep(TIMEOUT_S);
+		usleep(SLEEP_S * 1000000);
 	}
 
 	printf("Sender exiting\n");
