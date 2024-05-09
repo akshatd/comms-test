@@ -1,4 +1,5 @@
 #include <arpa/inet.h> // for socket stuff
+#include <math.h>      // for modf
 #include <signal.h>    // for catching signals like keyboard interrupts
 #include <stdio.h>     // for printf
 #include <sys/time.h>  // for timeouts
@@ -31,8 +32,10 @@ int main() {
 
 	// create timeout
 	struct timeval tv;
-	tv.tv_sec  = TIMEOUT_S;
-	tv.tv_usec = TIMEOUT_S * 1000000;
+	double         to_sec, to_usec;
+	to_usec    = modf(TIMEOUT_S, &to_sec) * 1000000;
+	tv.tv_sec  = to_sec;
+	tv.tv_usec = to_usec;
 
 	// create UDP sockets for the sender and receiver
 	int sockfd_sender = socket(AF_INET, SOCK_DGRAM, 0);

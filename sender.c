@@ -1,12 +1,11 @@
 #include <arpa/inet.h> // for socket stuff
+#include <math.h>      // for modf
 #include <signal.h>    // for catching signals like keyboard interrupts
 #include <stdio.h>     // for printf
 #include <sys/time.h>  // for timeouts
 #include <unistd.h>    // for sleep
 
 #include "common.h"
-
-#define SLEEP_S 0.5
 
 static volatile int running = 1;
 
@@ -28,8 +27,10 @@ int main() {
 
 	// create timeout
 	struct timeval tv;
-	tv.tv_sec  = TIMEOUT_S;
-	tv.tv_usec = TIMEOUT_S * 1000000;
+	double         to_sec, to_usec;
+	to_usec    = modf(TIMEOUT_S, &to_sec) * 1000000;
+	tv.tv_sec  = to_sec;
+	tv.tv_usec = to_usec;
 
 	// create UDP socket to send data
 	int sockfd_sender = socket(AF_INET, SOCK_DGRAM, 0);
@@ -74,7 +75,7 @@ int main() {
 			printf("Sent packet to: %s:%hu\n", inet_ntoa(addr_server.sin_addr), ntohs(addr_server.sin_port));
 #endif
 		}
-		usleep(SLEEP_S * 1000000);
+		usleep(SEND_INT_S * 1000000);
 	}
 
 	printf("Sender exiting\n");

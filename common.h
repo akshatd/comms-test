@@ -4,8 +4,10 @@
 #include <sys/time.h>
 
 // #define LOG_DEBUG
-#define TIMEOUT_S    0.5
-#define MAX_DELAY_MS 0.2
+
+#define SEND_INT_S   0.5            // interval between sending packets
+#define TIMEOUT_S    SEND_INT_S * 2 // timeout for receiving packets
+#define MAX_DELAY_MS 0.1            // maximum delay before warning
 
 typedef struct Packet {
 		uint32_t       seq_num;
