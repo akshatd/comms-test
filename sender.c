@@ -24,7 +24,7 @@ int main() {
 	printf("Im the sender!\n");
 
 	Config config = readConfig(CONFIG_FILE);
-	printf("Server: %s\nPort: %hu\n", config.ip_server, config.port_sender);
+	printf("Server IP: %s\nPort: %hu\n", config.ip_server, config.port_sender);
 
 	// create timeout
 	struct timeval tv;
@@ -45,17 +45,17 @@ int main() {
 	}
 
 	// create server address
-	struct sockaddr_in server_addr;
-	server_addr.sin_family      = AF_INET;
-	server_addr.sin_addr.s_addr = inet_addr(config.ip_server);
-	server_addr.sin_port        = htons(config.port_sender);
+	struct sockaddr_in addr_server;
+	addr_server.sin_family      = AF_INET;
+	addr_server.sin_addr.s_addr = inet_addr(config.ip_server);
+	addr_server.sin_port        = htons(config.port_sender);
 
 	// no need to bind socket when sending data to server
 
 	// send data to server
 	Packet    sent_packet;
 	ssize_t   sent_packet_len;
-	socklen_t addrlen = sizeof(server_addr);
+	socklen_t addrlen = sizeof(addr_server);
 	uint32_t  seq_num = 0;
 	while (running) {
 		sent_packet.seq_num  = seq_num++;
@@ -63,7 +63,7 @@ int main() {
 		sent_packet.crc      = crc(sent_packet.seq_num, sent_packet.distance);
 		gettimeofday(&sent_packet.timestamp, NULL);
 		sent_packet_len =
-			sendto(sockfd_sender, &sent_packet, sizeof(sent_packet), 0, (struct sockaddr *)&server_addr, addrlen);
+			sendto(sockfd_sender, &sent_packet, sizeof(sent_packet), 0, (struct sockaddr *)&addr_server, addrlen);
 		if (sent_packet_len < 0) {
 			perror("Failed to send packet, ignoring ...");
 		} else {
@@ -71,7 +71,7 @@ int main() {
 			printf(
 				"Sent packet: %u %u %u (%ld bytes)\n", sent_packet.seq_num, sent_packet.distance, sent_packet.crc,
 				sent_packet_len);
-			printf("Sent packet to: %s:%hu\n", inet_ntoa(server_addr.sin_addr), ntohs(server_addr.sin_port));
+			printf("Sent packet to: %s:%hu\n", inet_ntoa(addr_server.sin_addr), ntohs(addr_server.sin_port));
 #endif
 		}
 		usleep(SLEEP_S * 1000000);

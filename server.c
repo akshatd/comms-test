@@ -23,9 +23,10 @@ int main() {
 
 	Config config = readConfig(CONFIG_FILE);
 	printf(
-		"Server: %s\nSend Port: %hu, Recv Port: %hu\n",
+		"For Sender:\n- IP: %s\n- Port: %hu\nFor Receiver:\n- IP: %s\n- Port: %hu\n",
 		config.ip_server,   //
 		config.port_sender, //
+		config.ip_receiver, //
 		config.port_receiver);
 
 	// create timeout
@@ -61,16 +62,17 @@ int main() {
 	printf("Server sockets created\n");
 
 	// create server address
-	struct sockaddr_in sender_addr, recver_addr;
-	sender_addr.sin_family      = AF_INET;
-	recver_addr.sin_family      = AF_INET;
-	sender_addr.sin_addr.s_addr = inet_addr(config.ip_server);
-	recver_addr.sin_addr.s_addr = inet_addr(config.ip_server);
-	sender_addr.sin_port        = htons(config.port_sender);
-	recver_addr.sin_port        = htons(config.port_receiver);
+	struct sockaddr_in addr_server, addr_recver;
+	addr_server.sin_family      = AF_INET;
+	addr_server.sin_addr.s_addr = inet_addr(config.ip_server);
+	addr_server.sin_port        = htons(config.port_sender);
+
+	addr_recver.sin_family      = AF_INET;
+	addr_recver.sin_addr.s_addr = inet_addr(config.ip_receiver);
+	addr_recver.sin_port        = htons(config.port_receiver);
 
 	// bind socket so sender can send data to it
-	if (bind(sockfd_sender, (struct sockaddr *)&sender_addr, sizeof(sender_addr)) < 0) {
+	if (bind(sockfd_sender, (struct sockaddr *)&addr_server, sizeof(addr_server)) < 0) {
 		perror("Failed to bind server sender socket");
 		return 1;
 	} else {
@@ -81,23 +83,22 @@ int main() {
 
 	Packet             packet;
 	ssize_t            packet_len;
-	socklen_t          addrlen = sizeof(sender_addr);
-	struct sockaddr_in sender_addr_actual; // sender address
+	socklen_t          addrlen = sizeof(addr_server);
+	struct sockaddr_in addr_sender; // sender address
 	uint32_t           seq_num  = 0;
 	int64_t            seq_diff = 0;
 	struct timeval     curr_time;
 	double             delay;
 	while (running) {
 		// receive data from the sender
-		packet_len = recvfrom(sockfd_sender, &packet, sizeof(packet), 0, (struct sockaddr *)&sender_addr_actual, &addrlen);
+		packet_len = recvfrom(sockfd_sender, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_sender, &addrlen);
 		if (packet_len < 0) {
 			perror("Failed to receive packet, ignoring ...");
 			continue;
 		} else {
 #ifdef LOG_DEBUG
 			printf("Received packet: %u %u %u (%ld bytes)\n", packet.seq_num, packet.distance, packet.crc, packet_len);
-			printf(
-				"Received packet from %s:%hu\n", inet_ntoa(sender_addr_actual.sin_addr), ntohs(sender_addr_actual.sin_port));
+			printf("Received packet from %s:%hu\n", inet_ntoa(addr_sender.sin_addr), ntohs(addr_sender.sin_port));
 #endif
 			if (!isPacketValid(packet)) {
 				printf("Packet is invalid\n");
@@ -119,13 +120,13 @@ int main() {
 		seq_num = packet.seq_num;
 
 		// send data to the receiver
-		packet_len = sendto(sockfd_receiver, &packet, sizeof(packet), 0, (struct sockaddr *)&recver_addr, addrlen);
+		packet_len = sendto(sockfd_receiver, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_recver, addrlen);
 		if (packet_len < 0) {
 			perror("Failed to send packet to receiver, ignoring ...");
 		} else {
 #ifdef LOG_DEBUG
 			printf("Sent packet: %u %u %u (%ld bytes)\n", packet.seq_num, packet.distance, packet.crc, packet_len);
-			printf("Sent packet to: %s:%hu\n", inet_ntoa(recver_addr.sin_addr), ntohs(recver_addr.sin_port));
+			printf("Sent packet to: %s:%hu\n", inet_ntoa(addr_recver.sin_addr), ntohs(addr_recver.sin_port));
 #endif
 		}
 	}

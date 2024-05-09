@@ -22,7 +22,7 @@ int main() {
 	printf("Im the receiver!\n");
 
 	Config config = readConfig(CONFIG_FILE);
-	printf("Server: %s\nPort: %hu\n", config.ip_server, config.port_sender);
+	printf("IP: %s\nPort: %hu\n", config.ip_receiver, config.port_receiver);
 
 	// create timeout
 	struct timeval tv;
@@ -43,13 +43,13 @@ int main() {
 	}
 
 	// create server address
-	struct sockaddr_in server_addr;
-	server_addr.sin_family      = AF_INET;
-	server_addr.sin_addr.s_addr = inet_addr(config.ip_server);
-	server_addr.sin_port        = htons(config.port_receiver);
+	struct sockaddr_in addr_recver;
+	addr_recver.sin_family      = AF_INET;
+	addr_recver.sin_addr.s_addr = inet_addr(config.ip_receiver);
+	addr_recver.sin_port        = htons(config.port_receiver);
 
 	// bind socket so server can send data to it
-	if (bind(sockfd_receiver, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+	if (bind(sockfd_receiver, (struct sockaddr *)&addr_recver, sizeof(addr_recver)) < 0) {
 		perror("Failed to bind receiver socket");
 		return 1;
 	} else {
@@ -59,8 +59,8 @@ int main() {
 	// receive data from server
 	Packet             received_packet;
 	ssize_t            received_packet_len;
-	socklen_t          addrlen = sizeof(server_addr);
-	struct sockaddr_in server_addr_actual;
+	socklen_t          addrlen = sizeof(addr_recver);
+	struct sockaddr_in addr_server;
 	uint32_t           seq_num  = 0;
 	int64_t            seq_diff = 0;
 	struct timeval     curr_time;
@@ -68,7 +68,7 @@ int main() {
 	while (running) {
 		// receive data from server
 		received_packet_len = recvfrom(
-			sockfd_receiver, &received_packet, sizeof(received_packet), 0, (struct sockaddr *)&server_addr_actual, &addrlen);
+			sockfd_receiver, &received_packet, sizeof(received_packet), 0, (struct sockaddr *)&addr_server, &addrlen);
 		if (received_packet_len < 0) {
 			perror("Failed to receive packet, ignoring ...");
 			continue;
@@ -77,8 +77,7 @@ int main() {
 			printf(
 				"Received packet: %u %u %u (%ld bytes)\n", received_packet.seq_num, received_packet.distance,
 				received_packet.crc, received_packet_len);
-			printf(
-				"Received packet from: %s:%hu\n", inet_ntoa(server_addr_actual.sin_addr), ntohs(server_addr_actual.sin_port));
+			printf("Received packet from: %s:%hu\n", inet_ntoa(addr_server.sin_addr), ntohs(addr_server.sin_port));
 #endif
 			if (!isPacketValid(received_packet)) {
 				printf("Packet is invalid\n");
