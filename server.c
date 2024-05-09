@@ -2,6 +2,7 @@
 #include <math.h>      // for modf
 #include <signal.h>    // for catching signals like keyboard interrupts
 #include <stdio.h>     // for printf
+#include <stdlib.h>    // for abs
 #include <sys/time.h>  // for timeouts
 #include <unistd.h>    // for sleep
 
@@ -113,7 +114,7 @@ int main() {
 		gettimeofday(&curr_time, NULL);
 		delay =
 			(curr_time.tv_sec - packet.timestamp.tv_sec) * 1000 + (curr_time.tv_usec - packet.timestamp.tv_usec) / 1000.0;
-		if (delay > MAX_DELAY_MS) printf("High Delay: sender -> server: %f\n", delay);
+		if (abs(delay) > MAX_DELAY_MS) printf("High Delay: sender -> server: %f\n", delay);
 
 		// check if sequence has been skipped
 		seq_diff = packet.seq_num - seq_num;

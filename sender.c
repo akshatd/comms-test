@@ -2,6 +2,7 @@
 #include <math.h>      // for modf
 #include <signal.h>    // for catching signals like keyboard interrupts
 #include <stdio.h>     // for printf
+#include <stdlib.h>    // for abs
 #include <sys/time.h>  // for timeouts
 #include <unistd.h>    // for sleep
 
