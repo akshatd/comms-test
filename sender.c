@@ -41,14 +41,22 @@ int main() {
 	ssize_t   packet_len;
 	socklen_t addrlen = sizeof(addr_server);
 	uint32_t  seq_num = 0;
+	uint16_t  syncs   = 0;
 
 	while (running) {
 		usleep(SEND_INT_S * 1000000);
 
 		// create packet
-		packet.seq_num  = seq_num++;
-		packet.distance = 100;
-		packet.crc      = crc(packet.seq_num, packet.distance);
+		if (syncs++ < NUM_SYNC) {
+			packet.type     = Sync;
+			packet.seq_num  = 0;
+			packet.distance = 0;
+		} else {
+			packet.type     = Data;
+			packet.seq_num  = seq_num++;
+			packet.distance = 100;
+		}
+		packet.crc = crc(packet.seq_num, packet.distance);
 		gettimeofday(&packet.timestamp, NULL);
 
 		// send packet

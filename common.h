@@ -3,15 +3,20 @@
 #include <math.h>      // for modf
 #include <stdbool.h>   // for bool
 #include <stdio.h>     // for FILE, fopen, fscanf, fclose, perror
+#include <stdlib.h>    // for qsort
 #include <sys/time.h>  // for timeval
 
 #define LOG_DEBUG
 
-#define SEND_INT_S   0.5            // interval between sending packets
-#define TIMEOUT_S    SEND_INT_S * 2 // timeout for receiving packets
-#define MAX_DELAY_MS 0.1            // maximum delay before warning
+#define SEND_INT_S   0.5 // interval between sending packets
+#define TIMEOUT_S    1   // timeout for receiving packets
+#define MAX_DELAY_MS 0   // maximum delay before warning
+#define NUM_SYNC     5   // number of sync packets to send
 
-typedef struct Packet {
+typedef enum { Sync, Data } PacketType;
+
+typedef struct {
+		PacketType     type;
 		uint32_t       seq_num;
 		uint32_t       distance;
 		uint32_t       crc;
@@ -31,7 +36,7 @@ bool isPacketValid(Packet packet) {
 
 #define CONFIG_FILE "config.txt"
 
-typedef struct Config {
+typedef struct {
 		char     ip_sender[16];
 		uint16_t port_sender;
 		char     ip_server[16];
@@ -90,4 +95,16 @@ int setupUdpSocket(bool is_receiver, char *ip, uint16_t port, double timeout_s) 
 	// no need to bind socket when sending data
 
 	return sockfd;
+}
+
+int cmpDouble(const void *a, const void *b) {
+	// this function is used to compare doubles for qsort
+	double diff = (*(double *)a - *(double *)b);
+	return diff == 0 ? 0 : diff > 0 ? 1 : -1;
+}
+
+double getMedian(double *arr, size_t len) {
+	// expects odd size arrays
+	qsort(arr, len, sizeof(*arr), cmpDouble);
+	return arr[len / 2];
 }

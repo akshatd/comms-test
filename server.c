@@ -50,7 +50,9 @@ int main() {
 	uint32_t           seq_num         = 0;
 	int64_t            seq_diff        = 0;
 	struct timeval     curr_time;
-	double             delay;
+	double             delay, delay_offset;
+	uint16_t           syncs            = 0;
+	double             delays[NUM_SYNC] = {0};
 
 	while (running) {
 		// receive data from the sender
@@ -76,12 +78,25 @@ int main() {
 		gettimeofday(&curr_time, NULL);
 		delay =
 			(curr_time.tv_sec - packet.timestamp.tv_sec) * 1000 + (curr_time.tv_usec - packet.timestamp.tv_usec) / 1000.0;
-		if (abs(delay) > MAX_DELAY_MS) printf("*** WARN: High Delay: sender -> server: %f\n", delay);
 
-		// check if sequence has been skipped
-		seq_diff = packet.seq_num - seq_num;
-		if (seq_diff % UINT32_MAX != 1) printf("*** WARN: Sequence number skipped: %u -> %u\n", seq_num, packet.seq_num);
-		seq_num = packet.seq_num;
+		// check if packet is a sync packet
+		if (syncs++ < NUM_SYNC) {
+			delays[syncs - 1] = delay;
+			if (syncs == NUM_SYNC) {
+				delay_offset = getMedian(delays, NUM_SYNC);
+				printf("Delay Offset: %f\n", delay_offset);
+			}
+		} else {
+			// apply delay offset
+			delay -= delay_offset;
+			// if (abs(delay) > MAX_DELAY_MS) printf("*** WARN: High Delay: sender -> server: %f\n", delay);
+			printf("*** WARN: High Delay: sender -> server: %f\n", delay);
+
+			// check if sequence has been skipped
+			seq_diff = packet.seq_num - seq_num;
+			if (seq_diff % UINT32_MAX != 1) printf("*** WARN: Sequence number skipped: %u -> %u\n", seq_num, packet.seq_num);
+			seq_num = packet.seq_num;
+		}
 
 		// send data to the receiver
 		packet_len = sendto(sockfd_receiver, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_recver, addr_sender_len);
