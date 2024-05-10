@@ -56,8 +56,8 @@ int main() {
 			packet.seq_num  = seq_num++;
 			packet.distance = 100;
 		}
-		packet.crc = crc(packet.seq_num, packet.distance);
 		gettimeofday(&packet.timestamp, NULL);
+		packet.crc = crc(packet);
 
 		// send packet
 		packet_len = sendto(sockfd_sender, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_server, addrlen);

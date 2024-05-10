@@ -19,20 +19,20 @@ typedef struct {
 		PacketType     type;
 		uint32_t       seq_num;
 		uint32_t       distance;
-		uint32_t       crc;
 		struct timeval timestamp;
+		uint32_t       crc;
 } Packet;
 
-int32_t crc(uint32_t seq_num, uint32_t distance) {
+int32_t crc(Packet packet) {
 	// This is a simple CRC function that is used to calculate the CRC of a packet
-	// The CRC is calculated by XORing the sequence number and distance
-	return seq_num ^ distance;
+	// The CRC is calculated by XORing
+	return packet.type ^ packet.seq_num ^ packet.distance ^ packet.timestamp.tv_sec ^ packet.timestamp.tv_usec;
 }
 
 bool isPacketValid(Packet packet) {
 	// This function checks if the CRC of the packet is correct
-	bool is_valid = packet.crc == crc(packet.seq_num, packet.distance);
-	if (!is_valid) printf("*** ERROR: Packet is invalid: %u != %u\n", packet.crc, crc(packet.seq_num, packet.distance));
+	bool is_valid = packet.crc == crc(packet);
+	if (!is_valid) printf("*** ERROR: Packet is invalid: %u != %u\n", packet.crc, crc(packet));
 	return is_valid;
 }
 
