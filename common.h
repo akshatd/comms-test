@@ -8,10 +8,10 @@
 
 // #define LOG_DEBUG
 
-#define SEND_INT_S   0.5 // interval between sending packets
-#define TIMEOUT_S    1   // timeout for receiving packets
-#define MAX_DELAY_MS 0.2 // maximum delay before warning
-#define NUM_SYNC     5   // number of sync packets to send
+#define SEND_INT_S   0.05 // interval between sending packets
+#define TIMEOUT_S    1    // timeout for receiving packets
+#define MAX_DELAY_MS 0.2  // maximum delay before warning
+#define NUM_SYNC     5    // number of sync packets to send
 
 typedef enum { Sync, Data } PacketType;
 

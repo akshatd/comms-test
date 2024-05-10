@@ -75,7 +75,7 @@ int main() {
 		} else {
 			// apply delay offset
 			delay -= delay_offset;
-			if (fabs(delay) > MAX_DELAY_MS) printf("*** WARN: High Delay: sender -> server: %f\n", delay);
+			if (fabs(delay) > MAX_DELAY_MS) printf("*** WARN: High Delay: sender -> receiver: %f\n", delay);
 
 			// check if sequence has been skipped
 			seq_diff = packet.seq_num - seq_num;
