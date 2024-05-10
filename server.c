@@ -20,11 +20,9 @@ int main() {
 	signal(SIGTERM, sigint_handler);
 	signal(SIGKILL, sigint_handler);
 
-	printf("Im the server!\n");
-
 	Config config = readConfig(CONFIG_FILE);
 	printf(
-		"For Sender:\n- IP: %s\n- Port: %hu\nFor Receiver:\n- IP: %s\n- Port: %hu\n",
+		"***\nWaiting for Sender at: %s:%hu\nRelaying to Receiver: %s:%hu\n***\n",
 		config.ip_server,   //
 		config.port_sender, //
 		config.ip_receiver, //
@@ -34,7 +32,7 @@ int main() {
 	int sockfd_sender   = setupUdpSocket(true, config.ip_server, config.port_sender, TIMEOUT_S);
 	int sockfd_receiver = setupUdpSocket(false, NULL, 0, TIMEOUT_S);
 	if (sockfd_sender < 0 || sockfd_receiver < 0) {
-		perror("Failed to create server sockets");
+		perror("*** ERROR: Failed to create server sockets");
 		return 1;
 	}
 
@@ -58,7 +56,7 @@ int main() {
 		// receive data from the sender
 		packet_len = recvfrom(sockfd_sender, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_sender, &addr_sender_len);
 		if (packet_len < 0) {
-			perror("Failed to receive packet, ignoring ...");
+			perror("Did not receive packet, continuing ...");
 			continue;
 		}
 
@@ -66,12 +64,11 @@ int main() {
 		printf(
 			"Recd: %u %u %u (%ld bytes) from %s:%hu\n", packet.seq_num, packet.distance, packet.crc, packet_len,
 			inet_ntoa(addr_sender.sin_addr), ntohs(addr_sender.sin_port));
-		// printf("Received packet from %s:%hu\n", inet_ntoa(addr_sender.sin_addr), ntohs(addr_sender.sin_port));
 #endif
 
 		// check if packet is valid
 		if (!isPacketValid(packet)) {
-			printf("Invalid Packet: %u %u %u \n", packet.seq_num, packet.distance, packet.crc);
+			printf("*** ERROR: Invalid Packet: %u %u %u \n", packet.seq_num, packet.distance, packet.crc);
 			continue;
 		}
 
@@ -79,19 +76,17 @@ int main() {
 		gettimeofday(&curr_time, NULL);
 		delay =
 			(curr_time.tv_sec - packet.timestamp.tv_sec) * 1000 + (curr_time.tv_usec - packet.timestamp.tv_usec) / 1000.0;
-		if (abs(delay) > MAX_DELAY_MS) printf("High Delay: sender -> server: %f\n", delay);
+		if (abs(delay) > MAX_DELAY_MS) printf("*** WARN: High Delay: sender -> server: %f\n", delay);
 
 		// check if sequence has been skipped
 		seq_diff = packet.seq_num - seq_num;
-		if (seq_diff % UINT32_MAX != 1) {
-			printf("Sequence number skipped: %u -> %u\n", seq_num, packet.seq_num);
-		}
+		if (seq_diff % UINT32_MAX != 1) printf("*** WARN: Sequence number skipped: %u -> %u\n", seq_num, packet.seq_num);
 		seq_num = packet.seq_num;
 
 		// send data to the receiver
 		packet_len = sendto(sockfd_receiver, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_recver, addr_sender_len);
 		if (packet_len < 0) {
-			perror("Failed to send packet to receiver, ignoring ...");
+			perror("*** ERROR: Failed to send packet, ignoring ...");
 			continue;
 		}
 
@@ -99,11 +94,10 @@ int main() {
 		printf(
 			"Sent: %u %u %u (%ld bytes) to %s:%hu\n", packet.seq_num, packet.distance, packet.crc, packet_len,
 			inet_ntoa(addr_recver.sin_addr), ntohs(addr_recver.sin_port));
-		// printf("Sent packet to: %s:%hu\n", inet_ntoa(addr_recver.sin_addr), ntohs(addr_recver.sin_port));
 #endif
 	}
 
-	printf("Server shutting down\n");
+	printf("Server shutting down...\n");
 	close(sockfd_sender);
 	close(sockfd_receiver);
 

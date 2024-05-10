@@ -66,13 +66,13 @@ int setupUdpSocket(bool is_receiver, char *ip, uint16_t port, double timeout_s) 
 	// create UDP socket
 	int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sockfd < 0) {
-		perror("Failed to create socket");
+		perror("*** ERROR: Failed to create socket");
 		return -1;
 	}
 
 	// set timeout on socket
 	if (setsockopt(sockfd, SOL_SOCKET, is_receiver ? SO_RCVTIMEO : SO_SNDTIMEO, &tv, sizeof(tv)) < 0) {
-		perror("Failed to set timeout on socket");
+		perror("*** ERROR: Failed to set timeout on socket");
 		return -1;
 	}
 
@@ -83,7 +83,7 @@ int setupUdpSocket(bool is_receiver, char *ip, uint16_t port, double timeout_s) 
 		addr.sin_addr.s_addr = inet_addr(ip);
 		addr.sin_port        = htons(port);
 		if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-			perror("Failed to bind socket");
+			perror("*** ERROR: Failed to bind socket");
 			return -1;
 		}
 	}

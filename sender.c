@@ -20,15 +20,13 @@ int main() {
 	signal(SIGTERM, sigint_handler);
 	signal(SIGKILL, sigint_handler);
 
-	printf("Im the sender!\n");
-
 	Config config = readConfig(CONFIG_FILE);
-	printf("Server IP: %s\nPort: %hu\n", config.ip_server, config.port_sender);
+	printf("***\nSending to: %s:%hu\n***\n", config.ip_server, config.port_sender);
 
 	// set up socket to send data
 	int sockfd_sender = setupUdpSocket(false, NULL, 0, TIMEOUT_S);
 	if (sockfd_sender < 0) {
-		perror("Failed to create sender socket");
+		perror("*** ERROR: Failed to create sender socket");
 		return 1;
 	}
 
@@ -56,7 +54,7 @@ int main() {
 		// send packet
 		packet_len = sendto(sockfd_sender, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_server, addrlen);
 		if (packet_len < 0) {
-			perror("Failed to send packet, ignoring ...");
+			perror("*** ERROR: Failed to send packet, ignoring ...");
 			continue;
 		}
 
@@ -64,15 +62,10 @@ int main() {
 		printf(
 			"Sent: %u %u %u (%ld bytes) to %s:%hu\n", packet.seq_num, packet.distance, packet.crc, packet_len,
 			inet_ntoa(addr_server.sin_addr), ntohs(addr_server.sin_port));
-
-		// printf(
-		// 	"Sent packet: %u %u %u (%ld bytes)\n", packet.seq_num, packet.distance, packet.crc,
-		// 	packet_len);
-		// printf("Sent packet to: %s:%hu\n", inet_ntoa(addr_server.sin_addr), ntohs(addr_server.sin_port));
 #endif
 	}
 
-	printf("Sender exiting\n");
+	printf("Sender shutting down...\n");
 	close(sockfd_sender);
 
 	return 0;

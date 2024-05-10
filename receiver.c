@@ -20,15 +20,13 @@ int main() {
 	signal(SIGTERM, sigint_handler);
 	signal(SIGKILL, sigint_handler);
 
-	printf("Im the receiver!\n");
-
 	Config config = readConfig(CONFIG_FILE);
-	printf("IP: %s\nPort: %hu\n", config.ip_receiver, config.port_receiver);
+	printf("***\nReceiving at: %s:%hu\n***\n", config.ip_receiver, config.port_receiver);
 
 	// setup socket to receive data
 	int sockfd_receiver = setupUdpSocket(true, config.ip_receiver, config.port_receiver, TIMEOUT_S);
 	if (sockfd_receiver < 0) {
-		perror("Failed to create receiver socket");
+		perror("*** ERROR: Failed to create receiver socket");
 		return 1;
 	}
 
@@ -47,7 +45,7 @@ int main() {
 		packet_len =
 			recvfrom(sockfd_receiver, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_server, &addr_server_len);
 		if (packet_len < 0) {
-			perror("Failed to receive packet, ignoring ...");
+			perror("Did not receive packet, continuing ...");
 			continue;
 		}
 
@@ -55,16 +53,11 @@ int main() {
 		printf(
 			"Recd: %u %u %u (%ld bytes) from %s:%hu\n", packet.seq_num, packet.distance, packet.crc, packet_len,
 			inet_ntoa(addr_server.sin_addr), ntohs(addr_server.sin_port));
-
-		// printf(
-		// 	"Received packet: %u %u %u (%ld bytes)\n", packet.seq_num, packet.distance, packet.crc,
-		// 	packet_len);
-		// printf("Received packet from: %s:%hu\n", inet_ntoa(addr_server.sin_addr), ntohs(addr_server.sin_port));
 #endif
 
 		// check if packet is valid
 		if (!isPacketValid(packet)) {
-			printf("Packet is invalid\n");
+			printf("*** ERROR: Packet is invalid\n");
 			continue;
 		}
 
@@ -72,17 +65,16 @@ int main() {
 		gettimeofday(&curr_time, NULL);
 		delay =
 			(curr_time.tv_sec - packet.timestamp.tv_sec) * 1000 + (curr_time.tv_usec - packet.timestamp.tv_usec) / 1000.0;
-		if (abs(delay) > MAX_DELAY_MS) printf("High Delay: sender -> receiver: %f\n", delay);
+		if (abs(delay) > MAX_DELAY_MS) printf("*** WARN: High Delay: sender -> receiver: %f\n", delay);
 
 		// check if sequence has been skipped
 		seq_diff = packet.seq_num - seq_num;
-		if (seq_diff % UINT32_MAX != 1) {
-			printf("Sequence number skipped: %u -> %u\n", seq_num, packet.seq_num);
-		}
+		if (seq_diff % UINT32_MAX != 1) printf("*** WARN: Sequence number skipped: %u -> %u\n", seq_num, packet.seq_num);
+
 		seq_num = packet.seq_num;
 	}
 
-	printf("Receiver exiting\n");
+	printf("Receiver shutting down...\n");
 	close(sockfd_receiver);
 
 	return 0;
