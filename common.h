@@ -1,9 +1,11 @@
-#include <inttypes.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <sys/time.h>
+#include <arpa/inet.h> // for socket stuff
+#include <inttypes.h>  // for uint32_t, uint16_t
+#include <math.h>      // for modf
+#include <stdbool.h>   // for bool
+#include <stdio.h>     // for FILE, fopen, fscanf, fclose, perror
+#include <sys/time.h>  // for timeval
 
-// #define LOG_DEBUG
+#define LOG_DEBUG
 
 #define SEND_INT_S   0.5            // interval between sending packets
 #define TIMEOUT_S    SEND_INT_S * 2 // timeout for receiving packets
@@ -50,4 +52,42 @@ Config readConfig(char *filename) {
 		config.ip_receiver);
 	fclose(file);
 	return config;
+}
+
+int setupUdpSocket(bool is_receiver, char *ip, uint16_t port, double timeout_s) {
+	// this function sets up a UDP socket and optionally binds it to an address if it is a receiver
+	// create timeout
+	struct timeval tv;
+	double         to_sec, to_usec;
+	to_usec    = modf(timeout_s, &to_sec) * 1000000;
+	tv.tv_sec  = to_sec;
+	tv.tv_usec = to_usec;
+
+	// create UDP socket
+	int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sockfd < 0) {
+		perror("Failed to create socket");
+		return -1;
+	}
+
+	// set timeout on socket
+	if (setsockopt(sockfd, SOL_SOCKET, is_receiver ? SO_RCVTIMEO : SO_SNDTIMEO, &tv, sizeof(tv)) < 0) {
+		perror("Failed to set timeout on socket");
+		return -1;
+	}
+
+	// bind socket if it is a receiver
+	if (is_receiver) {
+		struct sockaddr_in addr;
+		addr.sin_family      = AF_INET;
+		addr.sin_addr.s_addr = inet_addr(ip);
+		addr.sin_port        = htons(port);
+		if (bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+			perror("Failed to bind socket");
+			return -1;
+		}
+	}
+	// no need to bind socket when sending data
+
+	return sockfd;
 }

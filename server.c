@@ -1,5 +1,4 @@
 #include <arpa/inet.h> // for socket stuff
-#include <math.h>      // for modf
 #include <signal.h>    // for catching signals like keyboard interrupts
 #include <stdio.h>     // for printf
 #include <stdlib.h>    // for abs
@@ -31,83 +30,49 @@ int main() {
 		config.ip_receiver, //
 		config.port_receiver);
 
-	// create timeout
-	struct timeval tv;
-	double         to_sec, to_usec;
-	to_usec    = modf(TIMEOUT_S, &to_sec) * 1000000;
-	tv.tv_sec  = to_sec;
-	tv.tv_usec = to_usec;
-
-	// create UDP sockets for the sender and receiver
-	int sockfd_sender = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sockfd_sender < 0) {
-		perror("Failed to create server sender socket");
+	// setup sockets for the sender and receiver
+	int sockfd_sender   = setupUdpSocket(true, config.ip_server, config.port_sender, TIMEOUT_S);
+	int sockfd_receiver = setupUdpSocket(false, NULL, 0, TIMEOUT_S);
+	if (sockfd_sender < 0 || sockfd_receiver < 0) {
+		perror("Failed to create server sockets");
 		return 1;
-	} else {
-		if (setsockopt(sockfd_sender, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
-			perror("Failed to set timeout on server sender socket");
-			return 1;
-		}
-		printf("Server sender socket created\n");
 	}
 
-	int sockfd_receiver = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sockfd_receiver < 0) {
-		perror("Failed to create server receiver socket");
-		return 1;
-	} else {
-		if (setsockopt(sockfd_receiver, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) < 0) {
-			perror("Failed to set timeout on server receiver socket");
-			return 1;
-		}
-		printf("Server receiver socket created\n");
-	}
-
-	printf("Server sockets created\n");
-
-	// create server address
-	struct sockaddr_in addr_server, addr_recver;
-	addr_server.sin_family      = AF_INET;
-	addr_server.sin_addr.s_addr = inet_addr(config.ip_server);
-	addr_server.sin_port        = htons(config.port_sender);
-
+	// create receiver address
+	struct sockaddr_in addr_recver;
 	addr_recver.sin_family      = AF_INET;
 	addr_recver.sin_addr.s_addr = inet_addr(config.ip_receiver);
 	addr_recver.sin_port        = htons(config.port_receiver);
 
-	// bind socket so sender can send data to it
-	if (bind(sockfd_sender, (struct sockaddr *)&addr_server, sizeof(addr_server)) < 0) {
-		perror("Failed to bind server sender socket");
-		return 1;
-	} else {
-		printf("Server sender socket bound\n");
-	}
-
-	// no need to bind socket when sending data to receiver
-
+	// send data to receiver
 	Packet             packet;
 	ssize_t            packet_len;
-	socklen_t          addrlen = sizeof(addr_server);
 	struct sockaddr_in addr_sender; // sender address
-	uint32_t           seq_num  = 0;
-	int64_t            seq_diff = 0;
+	socklen_t          addr_sender_len = sizeof(addr_sender);
+	uint32_t           seq_num         = 0;
+	int64_t            seq_diff        = 0;
 	struct timeval     curr_time;
 	double             delay;
+
 	while (running) {
 		// receive data from the sender
-		packet_len = recvfrom(sockfd_sender, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_sender, &addrlen);
+		packet_len = recvfrom(sockfd_sender, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_sender, &addr_sender_len);
 		if (packet_len < 0) {
 			perror("Failed to receive packet, ignoring ...");
 			continue;
-		} else {
+		}
+
 #ifdef LOG_DEBUG
-			printf("Received packet: %u %u %u (%ld bytes)\n", packet.seq_num, packet.distance, packet.crc, packet_len);
-			printf("Received packet from %s:%hu\n", inet_ntoa(addr_sender.sin_addr), ntohs(addr_sender.sin_port));
+		printf(
+			"Recd: %u %u %u (%ld bytes) from %s:%hu\n", packet.seq_num, packet.distance, packet.crc, packet_len,
+			inet_ntoa(addr_sender.sin_addr), ntohs(addr_sender.sin_port));
+		// printf("Received packet from %s:%hu\n", inet_ntoa(addr_sender.sin_addr), ntohs(addr_sender.sin_port));
 #endif
-			if (!isPacketValid(packet)) {
-				printf("Packet is invalid\n");
-				continue;
-			}
+
+		// check if packet is valid
+		if (!isPacketValid(packet)) {
+			printf("Invalid Packet: %u %u %u \n", packet.seq_num, packet.distance, packet.crc);
+			continue;
 		}
 
 		// calculate the time taken to send the packet
@@ -124,15 +89,18 @@ int main() {
 		seq_num = packet.seq_num;
 
 		// send data to the receiver
-		packet_len = sendto(sockfd_receiver, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_recver, addrlen);
+		packet_len = sendto(sockfd_receiver, &packet, sizeof(packet), 0, (struct sockaddr *)&addr_recver, addr_sender_len);
 		if (packet_len < 0) {
 			perror("Failed to send packet to receiver, ignoring ...");
-		} else {
-#ifdef LOG_DEBUG
-			printf("Sent packet: %u %u %u (%ld bytes)\n", packet.seq_num, packet.distance, packet.crc, packet_len);
-			printf("Sent packet to: %s:%hu\n", inet_ntoa(addr_recver.sin_addr), ntohs(addr_recver.sin_port));
-#endif
+			continue;
 		}
+
+#ifdef LOG_DEBUG
+		printf(
+			"Sent: %u %u %u (%ld bytes) to %s:%hu\n", packet.seq_num, packet.distance, packet.crc, packet_len,
+			inet_ntoa(addr_recver.sin_addr), ntohs(addr_recver.sin_port));
+		// printf("Sent packet to: %s:%hu\n", inet_ntoa(addr_recver.sin_addr), ntohs(addr_recver.sin_port));
+#endif
 	}
 
 	printf("Server shutting down\n");
