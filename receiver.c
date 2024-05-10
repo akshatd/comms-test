@@ -35,7 +35,7 @@ int main() {
 	ssize_t            packet_len;
 	struct sockaddr_in addr_server;
 	socklen_t          addr_server_len = sizeof(addr_server);
-	uint32_t           seq_num         = 0;
+	uint32_t           seq_num         = -1; // start at -1 to account for first packet being 0
 	int64_t            seq_diff        = 0;
 	struct timeval     curr_time;
 	double             delay, delay_offset;
@@ -58,10 +58,7 @@ int main() {
 #endif
 
 		// check if packet is valid
-		if (!isPacketValid(packet)) {
-			printf("*** ERROR: Packet is invalid\n");
-			continue;
-		}
+		if (!isPacketValid(packet)) continue;
 
 		// calculate the time taken to receive the packet
 		gettimeofday(&curr_time, NULL);
@@ -70,7 +67,7 @@ int main() {
 		// check if packet is a sync packet
 		if (syncs++ < NUM_SYNC) {
 			delays[syncs - 1] = delay;
-			printf("Sync Packet: %f\n", delay);
+			// printf("Sync Packet: %f\n", delay);
 			if (syncs == NUM_SYNC) {
 				delay_offset = getMedian(delays, NUM_SYNC);
 				printf("Delay Offset: %f\n", delay_offset);
@@ -78,8 +75,7 @@ int main() {
 		} else {
 			// apply delay offset
 			delay -= delay_offset;
-			// if (abs(delay) > MAX_DELAY_MS) printf("*** WARN: High Delay: sender -> server: %f\n", delay);
-			printf("*** WARN: High Delay: sender -> server: %f\n", delay);
+			if (fabs(delay) > MAX_DELAY_MS) printf("*** WARN: High Delay: sender -> server: %f\n", delay);
 
 			// check if sequence has been skipped
 			seq_diff = packet.seq_num - seq_num;

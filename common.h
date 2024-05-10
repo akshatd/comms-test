@@ -6,11 +6,11 @@
 #include <stdlib.h>    // for qsort
 #include <sys/time.h>  // for timeval
 
-#define LOG_DEBUG
+// #define LOG_DEBUG
 
 #define SEND_INT_S   0.5 // interval between sending packets
 #define TIMEOUT_S    1   // timeout for receiving packets
-#define MAX_DELAY_MS 0   // maximum delay before warning
+#define MAX_DELAY_MS 0.2 // maximum delay before warning
 #define NUM_SYNC     5   // number of sync packets to send
 
 typedef enum { Sync, Data } PacketType;
@@ -31,7 +31,9 @@ int32_t crc(uint32_t seq_num, uint32_t distance) {
 
 bool isPacketValid(Packet packet) {
 	// This function checks if the CRC of the packet is correct
-	return packet.crc == crc(packet.seq_num, packet.distance);
+	bool is_valid = packet.crc == crc(packet.seq_num, packet.distance);
+	if (!is_valid) printf("*** ERROR: Packet is invalid: %u != %u\n", packet.crc, crc(packet.seq_num, packet.distance));
+	return is_valid;
 }
 
 #define CONFIG_FILE "config.txt"
